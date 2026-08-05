@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Homework Tracker — JEE Dashboard</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0a0f">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0a0f;
+    --bg-elevated:#111119;
+    --bg-card:#15151e;
+    --bg-card-hover:#191925;
+    --border:rgba(255,255,255,0.07);
+    --border-hover:rgba(255,255,255,0.14);
+    --text-primary:#e9e9ee;
+    --text-secondary:#8d8d99;
+    --text-dim:#54545f;
+    --physics:#00d9ff;
+    --physics-glow:rgba(0,217,255,0.14);
+    --chemistry:#ffb800;
+    --chemistry-glow:rgba(255,184,0,0.14);
+    --maths:#ff2ee6;
+    --maths-glow:rgba(255,46,230,0.14);
+    --success:#00e676;
+    --success-glow:rgba(0,230,118,0.14);
+    --danger:#ff4757;
+    --danger-glow:rgba(255,71,87,0.14);
+    --warning:#ffa726;
+    --warning-glow:rgba(255,167,38,0.14);
+    --font-display:'Space Grotesk',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono','Courier New',monospace;
+    --radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -5%, rgba(0,217,255,0.06), transparent),
+      radial-gradient(ellipse 900px 500px at 85% 0%, rgba(255,46,230,0.05), transparent),
+      var(--bg);
+    color:var(--text-primary);
+    font-family:var(--font-mono);
+    min-height:100vh;
+    padding:20px 14px 60px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:860px;margin:0 auto;}
+
+  /* ---------- Header ---------- */
+  header{margin-bottom:22px;}
+  .title-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px;}
+  h1{font-family:var(--font-display);font-size:24px;font-weight:700;letter-spacing:-0.02em;}
+  h1 .dot{color:var(--physics);}
+  .subtitle{color:var(--text-secondary);font-size:12.5px;margin-bottom:18px;}
+  .io-buttons{display:flex;gap:8px;}
+  .io-btn{
+    font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:0.03em;
+    color:var(--text-secondary);background:var(--bg-elevated);border:1px solid var(--border);
+    border-radius:8px;padding:7px 11px;cursor:pointer;transition:all .15s ease;text-transform:uppercase;
+  }
+  .io-btn:hover{color:var(--text-primary);border-color:var(--border-hover);background:var(--bg-card-hover);}
+
+  /* ---------- Sandbox banner ---------- */
+  .sandbox-banner{
+    display:none;background:var(--warning-glow);border:1px solid rgba(255,167,38,0.3);
+    color:var(--warning);font-size:12px;border-radius:10px;padding:10px 14px;margin-bottom:18px;line-height:1.5;
+  }
+  .sandbox-banner.show{display:block;}
+
+  /* ---------- Stats ---------- */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:22px;}
+  .stat-card{
+    background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:13px 10px;text-align:center;
+  }
+  .stat-num{font-family:var(--font-display);font-size:22px;font-weight:700;line-height:1;}
+  .stat-label{font-size:9.5px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em;margin-top:6px;}
+  .stat-card.overdue .stat-num{color:var(--danger);}
+  .stat-card.pending .stat-num{color:var(--warning);}
+  .stat-card.rate .stat-num{color:var(--success);}
+
+  /* ---------- Streaks ---------- */
+  .streaks{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px;}
+  .streak-card{
+    background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:14px 8px 12px;text-align:center;position:relative;overflow:hidden;transition:box-shadow .2s ease,border-color .2s ease;
+  }
+  .streak-card[data-subject="physics"]{border-top:2.5px solid var(--physics);}
+  .streak-card[data-subject="chemistry"]{border-top:2.5px solid var(--chemistry);}
+  .streak-card[data-subject="maths"]{border-top:2.5px solid var(--maths);}
+  .streak-card.hot[data-subject="physics"]{box-shadow:0 0 18px -4px var(--physics-glow);border-color:var(--physics);}
+  .streak-card.hot[data-subject="chemistry"]{box-shadow:0 0 18px -4px var(--chemistry-glow);border-color:var(--chemistry);}
+  .streak-card.hot[data-subject="maths"]{box-shadow:0 0 18px -4px var(--maths-glow);border-color:var(--maths);}
+  .streak-flame{font-size:16px;line-height:1;margin-bottom:2px;opacity:0.35;filter:grayscale(1);transition:all .2s ease;}
+  .streak-card.active .streak-flame{opacity:1;filter:grayscale(0);}
+  .streak-num{font-family:var(--font-display);font-size:21px;font-weight:700;line-height:1;}
+  .streak-card[data-subject="physics"] .streak-num{color:var(--physics);}
+  .streak-card[data-subject="chemistry"] .streak-num{color:var(--chemistry);}
+  .streak-card[data-subject="maths"] .streak-num{color:var(--maths);}
+  .streak-label{font-size:9px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;}
+  .streak-shield{font-size:9.5px;margin-top:7px;min-height:13px;font-weight:600;letter-spacing:0.02em;}
+  .streak-shield.available{color:var(--success);}
+  .streak-shield.used{color:var(--text-dim);}
+
+  /* ---------- Add Panel ---------- */
+  .panel{
+    background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px;margin-bottom:18px;
+  }
+  .panel-title{font-family:var(--font-display);font-size:13px;font-weight:600;color:var(--text-secondary);
+    text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;}
+
+  .subject-picker{display:flex;gap:8px;margin-bottom:12px;}
+  .subj-btn{
+    flex:1;font-family:var(--font-display);font-weight:600;font-size:13px;
+    background:var(--bg-elevated);border:1.5px solid var(--border);border-radius:9px;
+    padding:10px 6px;color:var(--text-secondary);cursor:pointer;transition:all .15s ease;text-align:center;
+  }
+  .subj-btn[data-subject="physics"].active{border-color:var(--physics);color:var(--physics);background:var(--physics-glow);box-shadow:0 0 0 1px var(--physics-glow);}
+  .subj-btn[data-subject="chemistry"].active{border-color:var(--chemistry);color:var(--chemistry);background:var(--chemistry-glow);box-shadow:0 0 0 1px var(--chemistry-glow);}
+  .subj-btn[data-subject="maths"].active{border-color:var(--maths);color:var(--maths);background:var(--maths-glow);box-shadow:0 0 0 1px var(--maths-glow);}
+  .subj-btn:hover:not(.active){border-color:var(--border-hover);color:var(--text-primary);}
+
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field.full{grid-column:1/-1;}
+  label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;}
+  input[type="text"], input[type="date"], textarea, select{
+    font-family:var(--font-mono);font-size:13.5px;color:var(--text-primary);
+    background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;
+    padding:9px 10px;outline:none;transition:border-color .15s ease;width:100%;
+  }
+  input[type="text"]:focus, input[type="date"]:focus, textarea:focus, select:focus{border-color:var(--border-hover);}
+  input[type="date"]{color-scheme:dark;}
+  textarea{resize:vertical;min-height:64px;line-height:1.5;font-size:13px;}
+  ::placeholder{color:var(--text-dim);}
+
+  .add-btn{
+    width:100%;font-family:var(--font-display);font-weight:700;font-size:14px;letter-spacing:0.02em;
+    background:linear-gradient(135deg, var(--physics), var(--maths));color:#050508;
+    border:none;border-radius:9px;padding:12px;cursor:pointer;margin-top:2px;transition:opacity .15s ease,transform .1s ease;
+  }
+  .add-btn:hover{opacity:0.9;}
+  .add-btn:active{transform:scale(0.99);}
+  .add-btn.editing{background:linear-gradient(135deg, var(--warning), var(--chemistry));}
+  .cancel-edit{
+    display:none;text-align:center;font-size:11px;color:var(--text-secondary);
+    margin-top:8px;cursor:pointer;text-decoration:underline;
+  }
+  .cancel-edit.show{display:block;}
+
+  .hint{font-size:10.5px;color:var(--text-dim);margin-top:8px;text-align:center;}
+
+  /* ---------- Filters ---------- */
+  .filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
+  .filter-tabs{display:flex;gap:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:9px;padding:3px;}
+  .filter-tab{
+    font-family:var(--font-mono);font-size:11.5px;font-weight:600;color:var(--text-secondary);
+    background:transparent;border:none;border-radius:7px;padding:7px 11px;cursor:pointer;transition:all .15s ease;
+  }
+  .filter-tab.active{background:var(--bg-elevated);color:var(--text-primary);}
+  .status-select{
+    font-family:var(--font-mono);font-size:11.5px;background:var(--bg-card);border:1px solid var(--border);
+    border-radius:9px;color:var(--text-secondary);padding:8px 10px;cursor:pointer;
+  }
+  .search-input{
+    flex:1;min-width:120px;font-family:var(--font-mono);font-size:12px;background:var(--bg-card);
+    border:1px solid var(--border);border-radius:9px;color:var(--text-primary);padding:8px 10px;
+  }
+
+  /* ---------- List ---------- */
+  .date-group{margin-bottom:20px;}
+  .date-heading{
+    font-family:var(--font-display);font-size:12px;font-weight:600;color:var(--text-secondary);
+    text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;padding-left:2px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .date-heading::after{content:'';flex:1;height:1px;background:var(--border);}
+
+  .hw-card{
+    background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--text-dim);
+    border-radius:10px;padding:13px 14px;margin-bottom:9px;transition:border-color .15s ease,background .15s ease;
+  }
+  .hw-card:hover{background:var(--bg-card-hover);border-color:var(--border-hover);}
+  .hw-card[data-subject="physics"]{border-left-color:var(--physics);}
+  .hw-card[data-subject="chemistry"]{border-left-color:var(--chemistry);}
+  .hw-card[data-subject="maths"]{border-left-color:var(--maths);}
+  .hw-card.done{opacity:0.55;}
+  .hw-card.just-done{animation:pulse-done .5s ease;}
+  @keyframes pulse-done{
+    0%{background:var(--success-glow);border-left-color:var(--success);}
+    100%{}
+  }
+
+  .hw-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:7px;}
+  .hw-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .subj-tag{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:2.5px 7px;border-radius:5px;}
+  .subj-tag.physics{color:var(--physics);background:var(--physics-glow);}
+  .subj-tag.chemistry{color:var(--chemistry);background:var(--chemistry-glow);}
+  .subj-tag.maths{color:var(--maths);background:var(--maths-glow);}
+  .chapter-name{font-family:var(--font-display);font-weight:600;font-size:14px;}
+  .hw-card.done .chapter-name{text-decoration:line-through;color:var(--text-secondary);}
+
+  .hw-actions{display:flex;gap:6px;flex-shrink:0;}
+  .icon-btn{
+    background:var(--bg-elevated);border:1px solid var(--border);border-radius:7px;
+    width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;font-size:13px;color:var(--text-secondary);transition:all .15s ease;
+  }
+  .icon-btn:hover{color:var(--text-primary);border-color:var(--border-hover);}
+  .icon-btn.done-toggle.checked{color:var(--success);border-color:var(--success);background:var(--success-glow);}
+  .icon-btn.del-btn:hover{color:var(--danger);border-color:var(--danger);}
+
+  .hw-body{font-size:13px;line-height:1.55;color:var(--text-primary);white-space:pre-wrap;margin-bottom:9px;}
+  .hw-card.done .hw-body{color:var(--text-secondary);}
+
+  .hw-bottom{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;}
+  .deadline-badge{
+    font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:0.02em;
+  }
+  .deadline-badge.overdue{color:var(--danger);background:var(--danger-glow);}
+  .deadline-badge.soon{color:var(--warning);background:var(--warning-glow);}
+  .deadline-badge.ok{color:var(--text-secondary);background:var(--bg-elevated);}
+  .deadline-badge.done{color:var(--success);background:var(--success-glow);}
+  .lecture-date-tag{font-size:10px;color:var(--text-dim);}
+
+  .empty-state{
+    text-align:center;padding:50px 20px;color:var(--text-dim);
+    border:1px dashed var(--border);border-radius:var(--radius);font-size:12.5px;line-height:1.6;
+  }
+  .empty-state .big{font-size:28px;margin-bottom:8px;}
+
+  @media(max-width:480px){
+    .stats{grid-template-columns:repeat(2,1fr);}
+    .field-row{grid-template-columns:1fr;}
+    .subject-picker{flex-wrap:wrap;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="title-row">
+      <h1>Homework<span class="dot">.</span>Tracker</h1>
+      <div class="io-buttons">
+        <button class="io-btn" id="exportBtn">Export</button>
+        <button class="io-btn" id="importBtn">Import</button>
+      </div>
+    </div>
+    <div class="subtitle">Lecture-wise homework log — Physics · Chemistry · Maths</div>
+  </header>
+
+  <div class="sandbox-banner" id="sandboxBanner">
+    ⚠ Preview mode — local storage isn't available here, so entries won't be saved. Download this file and open it in a browser (or host it, e.g. on GitHub Pages) for entries to persist.
+  </div>
+
+  <div class="stats">
+    <div class="stat-card"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Total</div></div>
+    <div class="stat-card pending"><div class="stat-num" id="statPending">0</div><div class="stat-label">Pending</div></div>
+    <div class="stat-card overdue"><div class="stat-num" id="statOverdue">0</div><div class="stat-label">Overdue</div></div>
+    <div class="stat-card rate"><div class="stat-num" id="statRate">0%</div><div class="stat-label">Completed</div></div>
+  </div>
+
+  <div class="streaks">
+    <div class="streak-card" data-subject="physics">
+      <div class="streak-flame">🔥</div>
+      <div class="streak-num" id="streakNum-physics">0</div>
+      <div class="streak-label">Physics streak</div>
+      <div class="streak-shield" id="streakShield-physics"></div>
+    </div>
+    <div class="streak-card" data-subject="chemistry">
+      <div class="streak-flame">🔥</div>
+      <div class="streak-num" id="streakNum-chemistry">0</div>
+      <div class="streak-label">Chemistry streak</div>
+      <div class="streak-shield" id="streakShield-chemistry"></div>
+    </div>
+    <div class="streak-card" data-subject="maths">
+      <div class="streak-flame">🔥</div>
+      <div class="streak-num" id="streakNum-maths">0</div>
+      <div class="streak-label">Maths streak</div>
+      <div class="streak-shield" id="streakShield-maths"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Log Today's Homework</div>
+
+    <div class="subject-picker" id="subjectPicker">
+      <button class="subj-btn" data-subject="physics">Physics</button>
+      <button class="subj-btn" data-subject="chemistry">Chemistry</button>
+      <button class="subj-btn" data-subject="maths">Maths</button>
+    </div>
+
+    <div class="field-row">
+      <div class="field full">
+        <label for="chapterInput">Chapter</label>
+        <input type="text" id="chapterInput" placeholder="e.g. Rotational Motion" list="chapterList" autocomplete="off">
+        <datalist id="chapterList"></datalist>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="lectureDate">Lecture Date</label>
+        <input type="date" id="lectureDate">
+      </div>
+      <div class="field">
+        <label for="deadlineDate">Deadline</label>
+        <input type="date" id="deadlineDate">
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field full">
+        <label for="hwText">Homework Given</label>
+        <textarea id="hwText" placeholder="e.g. Ex 7.2 Q1-15, PYQ sheet on torque, revise NLM traps..."></textarea>
+      </div>
+    </div>
+
+    <button class="add-btn" id="addBtn">+ Add Homework</button>
+    <div class="cancel-edit" id="cancelEdit">Cancel edit</div>
+    <div class="hint">Tip: deadline defaults to the next day — check off homework once you've verified it.</div>
+  </div>
+
+  <div class="filters">
+    <div class="filter-tabs" id="subjectFilter">
+      <button class="filter-tab active" data-filter="all">All</button>
+      <button class="filter-tab" data-filter="physics">Phy</button>
+      <button class="filter-tab" data-filter="chemistry">Chem</button>
+      <button class="filter-tab" data-filter="maths">Math</button>
+    </div>
+    <select class="status-select" id="statusFilter">
+      <option value="all">All status</option>
+      <option value="pending">Pending</option>
+      <option value="overdue">Overdue</option>
+      <option value="done">Done</option>
+    </select>
+    <input type="text" class="search-input" id="searchInput" placeholder="Search chapter or homework...">
+  </div>
+
+  <div id="listContainer"></div>
+
+</div>
+
+<input type="file" id="importFile" accept=".json" hidden>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- Storage layer with sandbox detection ---------------- */
+  const DATA_KEY = 'jee_hw_tracker_data_v1';
+  const CHAPTERS_KEY = 'jee_hw_tracker_custom_chapters_v1';
+  let storageAvailable = true;
+  let memStore = {};
+
+  function testStorage(){
+    try{
+      const k = '__hw_test__';
+      localStorage.setItem(k,'1');
+      localStorage.removeItem(k);
+      return true;
+    }catch(e){ return false; }
+  }
+  storageAvailable = testStorage();
+  if(!storageAvailable){
+    document.getElementById('sandboxBanner').classList.add('show');
+  }
+
+  function storeGet(key){
+    if(storageAvailable){
+      return localStorage.getItem(key);
+    }
+    return memStore[key] || null;
+  }
+  function storeSet(key, value){
+    if(storageAvailable){
+      localStorage.setItem(key, value);
+    }else{
+      memStore[key] = value;
+    }
+  }
+
+  function loadData(){
+    try{
+      const raw = storeGet(DATA_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+  function saveData(){
+    storeSet(DATA_KEY, JSON.stringify(homeworkList));
+  }
+  function loadCustomChapters(){
+    try{
+      const raw = storeGet(CHAPTERS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+  function saveCustomChapters(){
+    storeSet(CHAPTERS_KEY, JSON.stringify(customChapters));
+  }
+
+  /* ---------------- Data ---------------- */
+  let homeworkList = loadData();
+  let customChapters = loadCustomChapters();
+  let editingId = null;
+  let activeSubjectForm = null;
+
+  const SUBJECT_LABELS = { physics:'Physics', chemistry:'Chemistry', maths:'Maths' };
+
+  const DEFAULT_CHAPTERS = {
+    physics:['Units & Measurements','Kinematics','Laws of Motion','Work Energy Power','Rotational Motion','Gravitation',
+      'Mechanical Properties of Solids','Mechanical Properties of Fluids','Thermal Properties of Matter','Thermodynamics',
+      'Kinetic Theory of Gases','Oscillations (SHM)','Waves','Electrostatics','Current Electricity',
+      'Magnetic Effects of Current','Magnetism & Matter','EMI','Alternating Current','EM Waves',
+      'Ray Optics','Wave Optics','Dual Nature of Matter','Atoms','Nuclei','Semiconductor Electronics'],
+    chemistry:['Some Basic Concepts of Chemistry','Structure of Atom','Classification & Periodicity','Chemical Bonding',
+      'States of Matter','Thermodynamics','Equilibrium','Redox Reactions','Hydrogen','s-Block Elements',
+      'p-Block (Group 13-14)','Organic Chemistry Basics','Hydrocarbons','Solid State','Solutions','Electrochemistry',
+      'Chemical Kinetics','Surface Chemistry','p-Block (Group 15-18)','d & f Block Elements','Coordination Compounds',
+      'Haloalkanes & Haloarenes','Alcohols Phenols Ethers','Aldehydes Ketones Carboxylic Acids','Amines',
+      'Biomolecules','Polymers','Chemistry in Everyday Life'],
+    maths:['Sets Relations Functions','Complex Numbers','Quadratic Equations','Sequences & Series',
+      'Permutations & Combinations','Binomial Theorem','Matrices & Determinants','Straight Lines','Circles',
+      'Conic Sections','Trigonometric Ratios & Identities','Trigonometric Equations','Inverse Trig Functions',
+      'Limits Continuity Differentiability','Differentiation','Application of Derivatives','Indefinite Integration',
+      'Definite Integration','Application of Integrals','Differential Equations','Vector Algebra','3D Geometry',
+      'Probability','Statistics']
+  };
+
+  /* ---------------- Helpers ---------------- */
+  function todayISO(){
+    const d = new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function addDaysISO(iso, days){
+    const d = new Date(iso+'T00:00:00');
+    d.setDate(d.getDate()+days);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function daysUntil(iso){
+    const today = new Date(todayISO()+'T00:00:00');
+    const target = new Date(iso+'T00:00:00');
+    return Math.round((target - today) / 86400000);
+  }
+  function formatDateHeading(iso){
+    const d = new Date(iso+'T00:00:00');
+    return d.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+  }
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : str;
+    return div.innerHTML;
+  }
+  function uid(){
+    return 'hw_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  }
+
+  /* ---------------- DOM refs ---------------- */
+  const subjectPicker = document.getElementById('subjectPicker');
+  const chapterInput = document.getElementById('chapterInput');
+  const chapterList = document.getElementById('chapterList');
+  const lectureDate = document.getElementById('lectureDate');
+  const deadlineDate = document.getElementById('deadlineDate');
+  const hwText = document.getElementById('hwText');
+  const addBtn = document.getElementById('addBtn');
+  const cancelEdit = document.getElementById('cancelEdit');
+  const listContainer = document.getElementById('listContainer');
+  const subjectFilterBar = document.getElementById('subjectFilter');
+  const statusFilter = document.getElementById('statusFilter');
+  const searchInput = document.getElementById('searchInput');
+
+  let currentSubjectFilter = 'all';
+
+  /* ---------------- Init defaults ---------------- */
+  lectureDate.value = todayISO();
+  deadlineDate.addEventListener('focus', function(){}); // no-op, placeholder for future
+  updateDeadlineDefault();
+
+  function updateDeadlineDefault(){
+    if(!deadlineDate.dataset.userTouched){
+      deadlineDate.value = addDaysISO(lectureDate.value || todayISO(), 1);
+    }
+  }
+  lectureDate.addEventListener('change', updateDeadlineDefault);
+  deadlineDate.addEventListener('input', function(){ deadlineDate.dataset.userTouched = '1'; });
+
+  /* ---------------- Subject picker (form) ---------------- */
+  subjectPicker.addEventListener('click', function(e){
+    const btn = e.target.closest('.subj-btn');
+    if(!btn) return;
+    activeSubjectForm = btn.dataset.subject;
+    Array.from(subjectPicker.children).forEach(b => b.classList.toggle('active', b === btn));
+    populateChapterList(activeSubjectForm);
+  });
+
+  function populateChapterList(subject){
+    chapterList.innerHTML = '';
+    if(!subject) return;
+    const defaults = DEFAULT_CHAPTERS[subject] || [];
+    const custom = customChapters.filter(c => c.subject === subject).map(c => c.name);
+    const all = Array.from(new Set([...defaults, ...custom]));
+    all.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      chapterList.appendChild(opt);
+    });
+  }
+
+  /* ---------------- Add / Update ---------------- */
+  addBtn.addEventListener('click', function(){
+    const subject = activeSubjectForm;
+    const chapter = chapterInput.value.trim();
+    const text = hwText.value.trim();
+    const lDate = lectureDate.value;
+    const dDate = deadlineDate.value;
+
+    if(!subject){ flashField(subjectPicker); return; }
+    if(!chapter){ flashField(chapterInput); return; }
+    if(!text){ flashField(hwText); return; }
+    if(!lDate || !dDate){ flashField(deadlineDate); return; }
+
+    // remember custom chapter
+    if(!(DEFAULT_CHAPTERS[subject]||[]).includes(chapter) &&
+       !customChapters.some(c => c.subject === subject && c.name === chapter)){
+      customChapters.push({ subject, name: chapter });
+      saveCustomChapters();
+    }
+
+    if(editingId){
+      const entry = homeworkList.find(h => h.id === editingId);
+      if(entry){
+        entry.subject = subject;
+        entry.chapter = chapter;
+        entry.text = text;
+        entry.lectureDate = lDate;
+        entry.deadline = dDate;
+      }
+      editingId = null;
+      addBtn.textContent = '+ Add Homework';
+      addBtn.classList.remove('editing');
+      cancelEdit.classList.remove('show');
+    }else{
+      homeworkList.push({
+        id: uid(),
+        subject, chapter, text,
+        lectureDate: lDate,
+        deadline: dDate,
+        done: false,
+        doneDate: null,
+        createdAt: Date.now()
+      });
+    }
+
+    saveData();
+    resetForm(true);
+    render();
+  });
+
+  cancelEdit.addEventListener('click', function(){
+    editingId = null;
+    addBtn.textContent = '+ Add Homework';
+    addBtn.classList.remove('editing');
+    cancelEdit.classList.remove('show');
+    resetForm(false);
+  });
+
+  function flashField(el){
+    el.style.transition = 'box-shadow .15s ease';
+    el.style.boxShadow = '0 0 0 2px var(--danger)';
+    setTimeout(() => { el.style.boxShadow = ''; }, 500);
+  }
+
+  function resetForm(keepSubject){
+    chapterInput.value = '';
+    hwText.value = '';
+    lectureDate.value = todayISO();
+    deadlineDate.dataset.userTouched = '';
+    deadlineDate.value = addDaysISO(todayISO(), 1);
+    if(!keepSubject){
+      activeSubjectForm = null;
+      Array.from(subjectPicker.children).forEach(b => b.classList.remove('active'));
+      chapterList.innerHTML = '';
+    }
+  }
+
+  /* ---------------- Filters ---------------- */
+  subjectFilterBar.addEventListener('click', function(e){
+    const btn = e.target.closest('.filter-tab');
+    if(!btn) return;
+    currentSubjectFilter = btn.dataset.filter;
+    Array.from(subjectFilterBar.children).forEach(b => b.classList.toggle('active', b === btn));
+    render();
+  });
+  statusFilter.addEventListener('change', render);
+  searchInput.addEventListener('input', render);
+
+  /* ---------------- List actions (delegated) ---------------- */
+  listContainer.addEventListener('click', function(e){
+    const card = e.target.closest('.hw-card');
+    if(!card) return;
+    const id = card.dataset.id;
+    const entry = homeworkList.find(h => h.id === id);
+    if(!entry) return;
+
+    if(e.target.closest('.done-toggle')){
+      entry.done = !entry.done;
+      entry.doneDate = entry.done ? todayISO() : null;
+      saveData();
+      render();
+      if(entry.done){
+        requestAnimationFrame(() => {
+          const newCard = listContainer.querySelector('[data-id="'+CSS.escape(id)+'"]');
+          if(newCard){
+            newCard.classList.add('just-done');
+            setTimeout(() => newCard.classList.remove('just-done'), 550);
+          }
+        });
+      }
+    } else if(e.target.closest('.edit-btn')){
+      startEdit(entry);
+    } else if(e.target.closest('.del-btn')){
+      if(confirm('Delete this homework entry?')){
+        homeworkList = homeworkList.filter(h => h.id !== id);
+        saveData();
+        render();
+      }
+    }
+  });
+
+  function startEdit(entry){
+    editingId = entry.id;
+    activeSubjectForm = entry.subject;
+    Array.from(subjectPicker.children).forEach(b => b.classList.toggle('active', b.dataset.subject === entry.subject));
+    populateChapterList(entry.subject);
+    chapterInput.value = entry.chapter;
+    hwText.value = entry.text;
+    lectureDate.value = entry.lectureDate;
+    deadlineDate.value = entry.deadline;
+    deadlineDate.dataset.userTouched = '1';
+    addBtn.textContent = '✓ Save Changes';
+    addBtn.classList.add('editing');
+    cancelEdit.classList.add('show');
+    window.scrollTo({ top:0, behavior:'smooth' });
+  }
+
+  /* ---------------- Export / Import ---------------- */
+  document.getElementById('exportBtn').addEventListener('click', function(){
+    const blob = new Blob([JSON.stringify({ homework: homeworkList, customChapters }, null, 2)], { type:'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'homework-tracker-' + todayISO() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  const importFile = document.getElementById('importFile');
+  document.getElementById('importBtn').addEventListener('click', () => importFile.click());
+  importFile.addEventListener('change', function(){
+    const file = importFile.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(){
+      try{
+        const parsed = JSON.parse(reader.result);
+        const incoming = Array.isArray(parsed) ? parsed : (parsed.homework || []);
+        const incomingChapters = Array.isArray(parsed.customChapters) ? parsed.customChapters : [];
+        const existingIds = new Set(homeworkList.map(h => h.id));
+        let added = 0;
+        incoming.forEach(item => {
+          if(item && item.id && !existingIds.has(item.id)){
+            homeworkList.push(item);
+            existingIds.add(item.id);
+            added++;
+          }
+        });
+        incomingChapters.forEach(c => {
+          if(!customChapters.some(ec => ec.subject === c.subject && ec.name === c.name)){
+            customChapters.push(c);
+          }
+        });
+        saveData();
+        saveCustomChapters();
+        render();
+        alert(added + ' homework entrie(s) imported.');
+      }catch(err){
+        alert('Could not read that file — make sure it\'s a JSON export from this tool.');
+      }
+      importFile.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  /* ---------------- Streaks ---------------- */
+  // A day only counts if the subject had homework due that day (deadline == day).
+  // Clean day (all due homework checked by that day) -> streak +1.
+  // Missed day: if current streak > 7 and the one-time relaxation for this run
+  // hasn't been used yet, the miss is forgiven (streak holds, relaxation is spent).
+  // Otherwise the streak resets to 0 and relaxation eligibility resets with it.
+  // Today is never judged as a miss while its homework is still pending.
+  function computeSubjectStreak(subject){
+    const entries = homeworkList.filter(h => h.subject === subject);
+    if(entries.length === 0) return { streak:0, relaxationAvailable:false, relaxationUsed:false };
+
+    const byDay = {};
+    entries.forEach(e => {
+      if(!byDay[e.deadline]) byDay[e.deadline] = [];
+      byDay[e.deadline].push(e);
+    });
+
+    const deadlines = Object.keys(byDay).sort();
+    const today = todayISO();
+    let cursor = new Date(deadlines[0] + 'T00:00:00');
+    const end = new Date(today + 'T00:00:00');
+
+    let streak = 0;
+    let relaxationUsed = false;
+
+    while(cursor <= end){
+      const dayIso = cursor.getFullYear()+'-'+String(cursor.getMonth()+1).padStart(2,'0')+'-'+String(cursor.getDate()).padStart(2,'0');
+      const dayEntries = byDay[dayIso];
+
+      if(dayEntries && dayEntries.length){
+        const isToday = dayIso === today;
+        const allDone = dayEntries.every(e => e.done && e.doneDate && e.doneDate <= dayIso);
+
+        if(isToday && !allDone){
+          // day still in progress — don't judge yet
+        } else if(allDone){
+          streak += 1;
+        } else if(streak > 7 && !relaxationUsed){
+          relaxationUsed = true; // one-day grace, streak holds
+        } else {
+          streak = 0;
+          relaxationUsed = false;
+        }
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return { streak, relaxationAvailable: streak > 7 && !relaxationUsed, relaxationUsed };
+  }
+
+  function renderStreaks(){
+    ['physics','chemistry','maths'].forEach(subject => {
+      const { streak, relaxationAvailable, relaxationUsed } = computeSubjectStreak(subject);
+      const card = document.querySelector('.streak-card[data-subject="'+subject+'"]');
+      document.getElementById('streakNum-'+subject).textContent = streak;
+      card.classList.toggle('active', streak > 0);
+      card.classList.toggle('hot', streak > 7);
+
+      const shieldEl = document.getElementById('streakShield-'+subject);
+      if(relaxationAvailable){
+        shieldEl.textContent = '🛡 relaxation ready';
+        shieldEl.className = 'streak-shield available';
+      } else if(streak > 7 && relaxationUsed){
+        shieldEl.textContent = '🛡 relaxation used';
+        shieldEl.className = 'streak-shield used';
+      } else {
+        shieldEl.textContent = '';
+        shieldEl.className = 'streak-shield';
+      }
+    });
+  }
+
+  /* ---------------- Render ---------------- */
+  function getStatus(entry){
+    if(entry.done) return 'done';
+    const d = daysUntil(entry.deadline);
+    if(d < 0) return 'overdue';
+    return 'pending';
+  }
+
+  function render(){
+    renderStreaks();
+
+    // stats
+    const total = homeworkList.length;
+    const pending = homeworkList.filter(h => !h.done).length;
+    const overdue = homeworkList.filter(h => !h.done && daysUntil(h.deadline) < 0).length;
+    const doneCount = homeworkList.filter(h => h.done).length;
+    const rate = total ? Math.round((doneCount/total)*100) : 0;
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statPending').textContent = pending;
+    document.getElementById('statOverdue').textContent = overdue;
+    document.getElementById('statRate').textContent = rate + '%';
+
+    // filter
+    const q = searchInput.value.trim().toLowerCase();
+    const sFilter = statusFilter.value;
+    let filtered = homeworkList.filter(h => {
+      if(currentSubjectFilter !== 'all' && h.subject !== currentSubjectFilter) return false;
+      const status = getStatus(h);
+      if(sFilter !== 'all' && status !== sFilter) return false;
+      if(q && !(h.chapter.toLowerCase().includes(q) || h.text.toLowerCase().includes(q))) return false;
+      return true;
+    });
+
+    // sort: lecture date desc, then deadline asc
+    filtered.sort((a,b) => {
+      if(a.lectureDate !== b.lectureDate) return b.lectureDate.localeCompare(a.lectureDate);
+      return a.deadline.localeCompare(b.deadline);
+    });
+
+    listContainer.innerHTML = '';
+
+    if(filtered.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.innerHTML = homeworkList.length === 0
+        ? '<div class="big">📋</div>No homework logged yet.<br>Add today\'s lecture homework above to get started.'
+        : '<div class="big">🔍</div>No entries match your filters.';
+      listContainer.appendChild(empty);
+      return;
+    }
+
+    // group by lecture date
+    const groups = {};
+    filtered.forEach(h => {
+      if(!groups[h.lectureDate]) groups[h.lectureDate] = [];
+      groups[h.lectureDate].push(h);
+    });
+
+    Object.keys(groups).sort((a,b) => b.localeCompare(a)).forEach(dateKey => {
+      const groupWrap = document.createElement('div');
+      groupWrap.className = 'date-group';
+
+      const heading = document.createElement('div');
+      heading.className = 'date-heading';
+      heading.textContent = formatDateHeading(dateKey);
+      groupWrap.appendChild(heading);
+
+      groups[dateKey].forEach(entry => {
+        groupWrap.appendChild(buildCard(entry));
+      });
+
+      listContainer.appendChild(groupWrap);
+    });
+  }
+
+  function buildCard(entry){
+    const card = document.createElement('div');
+    card.className = 'hw-card' + (entry.done ? ' done' : '');
+    card.dataset.id = entry.id;
+    card.dataset.subject = entry.subject;
+
+    const status = getStatus(entry);
+    const d = daysUntil(entry.deadline);
+    let badgeClass = 'ok', badgeText = 'Due in ' + d + 'd';
+    if(entry.done){
+      badgeClass = 'done';
+      badgeText = '✓ Checked' + (entry.doneDate ? ' · ' + formatDateHeading(entry.doneDate).split(',')[0] : '');
+    } else if(d < 0){
+      badgeClass = 'overdue';
+      badgeText = 'Overdue ' + (-d) + 'd';
+    } else if(d === 0){
+      badgeClass = 'soon';
+      badgeText = 'Due today';
+    } else if(d === 1){
+      badgeClass = 'soon';
+      badgeText = 'Due tomorrow';
+    }
+
+    card.innerHTML = `
+      <div class="hw-top">
+        <div class="hw-meta">
+          <span class="subj-tag ${entry.subject}">${SUBJECT_LABELS[entry.subject]}</span>
+          <span class="chapter-name">${escapeHtml(entry.chapter)}</span>
+        </div>
+        <div class="hw-actions">
+          <button class="icon-btn done-toggle ${entry.done ? 'checked' : ''}" title="Mark checked">${entry.done ? '✓' : '○'}</button>
+          <button class="icon-btn edit-btn" title="Edit">✎</button>
+          <button class="icon-btn del-btn" title="Delete">🗑</button>
+        </div>
+      </div>
+      <div class="hw-body">${escapeHtml(entry.text)}</div>
+      <div class="hw-bottom">
+        <span class="lecture-date-tag">Lecture: ${entry.lectureDate}</span>
+        <span class="deadline-badge ${badgeClass}">${badgeText}</span>
+      </div>
+    `;
+    return card;
+  }
+
+  /* ---------------- Go ---------------- */
+  render();
+
+})();
+</script>
+</body>
+</html>
