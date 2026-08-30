@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Homework Tracker — JEE Dashboard</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0a0f">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0a0f;
+    --bg-elevated:rgba(17,17,25,0.72);
+    --bg-card:rgba(21,21,30,0.66);
+    --bg-card-hover:rgba(25,25,37,0.78);
+    --border:rgba(255,255,255,0.07);
+    --border-hover:rgba(255,255,255,0.16);
+    --text-primary:#e9e9ee;
+    --text-secondary:#8d8d99;
+    --text-dim:#54545f;
+    --physics:#00d9ff;
+    --physics-glow:rgba(0,217,255,0.14);
+    --chemistry:#ffb800;
+    --chemistry-glow:rgba(255,184,0,0.14);
+    --maths:#ff2ee6;
+    --maths-glow:rgba(255,46,230,0.14);
+    --success:#00e676;
+    --success-glow:rgba(0,230,118,0.14);
+    --danger:#ff4757;
+    --danger-glow:rgba(255,71,87,0.14);
+    --warning:#ffa726;
+    --warning-glow:rgba(255,167,38,0.14);
+    --font-display:'Space Grotesk',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono','Courier New',monospace;
+    --radius:12px;
+    --parallax-x:0px;
+    --parallax-y:0px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{background:var(--bg);}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -5%, rgba(0,217,255,0.06), transparent),
+      radial-gradient(ellipse 900px 500px at 85% 0%, rgba(255,46,230,0.05), transparent),
+      var(--bg);
+    color:var(--text-primary);
+    font-family:var(--font-mono);
+    min-height:100vh;
+    padding:20px 14px 60px;
+    -webkit-font-smoothing:antialiased;
+    position:relative;
+    overflow-x:hidden;
+  }
+  .app{max-width:860px;margin:0 auto;position:relative;z-index:1;}
+
+  /* ---------- Ambient background layers ---------- */
+  #starfield{position:fixed;inset:0;z-index:-2;pointer-events:none;}
+  .nebula{position:fixed;inset:0;z-index:-3;pointer-events:none;overflow:hidden;}
+  .nebula .blob-a, .nebula .blob-b{
+    position:absolute;width:520px;height:520px;border-radius:50%;filter:blur(60px);
+    transition:transform .35s ease-out;
+  }
+  .nebula .blob-a{
+    top:-12%;left:2%;background:radial-gradient(circle, rgba(0,217,255,0.12), transparent 65%);
+    transform:translate(var(--parallax-x), var(--parallax-y));
+  }
+  .nebula .blob-b{
+    top:-8%;right:0%;background:radial-gradient(circle, rgba(255,46,230,0.10), transparent 65%);
+    transform:translate(calc(var(--parallax-x) * -1), calc(var(--parallax-y) * -1));
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{
+      animation-duration:0.001ms !important;
+      animation-iteration-count:1 !important;
+      transition-duration:0.001ms !important;
+      scroll-behavior:auto !important;
+    }
+  }
+
+  /* ---------- Header ---------- */
+  header{margin-bottom:22px;}
+  .title-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px;}
+  h1{font-family:var(--font-display);font-size:24px;font-weight:700;letter-spacing:-0.02em;}
+  h1 .dot{color:var(--physics);}
+  .subtitle{color:var(--text-secondary);font-size:12.5px;margin-bottom:18px;}
+  .io-buttons{display:flex;gap:8px;}
+  .io-btn{
+    font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:0.03em;
+    color:var(--text-secondary);background:var(--bg-elevated);border:1px solid var(--border);
+    border-radius:8px;padding:7px 11px;cursor:pointer;transition:all .15s ease;text-transform:uppercase;
+  }
+  .io-btn:hover{color:var(--text-primary);border-color:var(--border-hover);background:var(--bg-card-hover);}
+  .io-btn:active{transform:scale(0.95);}
+
+  /* ---------- Sandbox banner ---------- */
+  .sandbox-banner{
+    display:none;background:var(--warning-glow);border:1px solid rgba(255,167,38,0.3);
+    color:var(--warning);font-size:12px;border-radius:10px;padding:10px 14px;margin-bottom:18px;line-height:1.5;
+  }
+  .sandbox-banner.show{display:block;}
+
+  /* ---------- Stats ---------- */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:22px;}
+  .stat-card{
+    background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:13px 10px;text-align:center;position:relative;overflow:hidden;
+    backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);
+    box-shadow:0 14px 32px -22px rgba(0,0,0,0.7);
+    transform-style:preserve-3d;will-change:transform;
+    transition:transform .12s ease, box-shadow .25s ease, border-color .25s ease;
+    animation:cardRise .5s cubic-bezier(.16,1,.3,1) both;
+  }
+  .stat-card::before{
+    content:'';position:absolute;inset:0;pointer-events:none;opacity:0;
+    background:radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,0.14), transparent 46%);
+    transition:opacity .25s ease;
+  }
+  .stat-card:hover::before{opacity:1;}
+  .stat-card:hover{border-color:var(--border-hover);box-shadow:0 20px 44px -18px rgba(0,0,0,0.75);}
+  .stat-num{font-family:var(--font-display);font-size:22px;font-weight:700;line-height:1;}
+  .stat-label{font-size:9.5px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em;margin-top:6px;}
+  .stat-card.overdue .stat-num{color:var(--danger);}
+  .stat-card.pending .stat-num{color:var(--warning);}
+  .stat-card.rate .stat-num{color:var(--success);}
+
+  @keyframes cardRise{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+
+  /* ---------- Streaks ---------- */
+  .streaks{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px;}
+  .streak-card{
+    background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:14px 8px 12px;text-align:center;position:relative;overflow:hidden;
+    backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);
+    box-shadow:0 14px 32px -22px rgba(0,0,0,0.7);
+    transform-style:preserve-3d;will-change:transform;
+    transition:transform .12s ease, box-shadow .25s ease,border-color .25s ease;
+    animation:cardRise .5s cubic-bezier(.16,1,.3,1) both;
+  }
+  .streak-card::before{
+    content:'';position:absolute;inset:0;pointer-events:none;opacity:0;z-index:1;
+    background:radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,0.14), transparent 46%);
+    transition:opacity .25s ease;
+  }
+  .streak-card:hover::before{opacity:1;}
+  .streak-card:hover{box-shadow:0 20px 44px -16px rgba(0,0,0,0.75);}
+  .streak-card[data-subject="physics"]{border-top:2.5px solid var(--physics);}
+  .streak-card[data-subject="chemistry"]{border-top:2.5px solid var(--chemistry);}
+  .streak-card[data-subject="maths"]{border-top:2.5px solid var(--maths);}
+  .streak-card.hot[data-subject="physics"]{box-shadow:0 0 18px -4px var(--physics-glow);border-color:var(--physics);}
+  .streak-card.hot[data-subject="chemistry"]{box-shadow:0 0 18px -4px var(--chemistry-glow);border-color:var(--chemistry);}
+  .streak-card.hot[data-subject="maths"]{box-shadow:0 0 18px -4px var(--maths-glow);border-color:var(--maths);}
+  .streak-flame{font-size:16px;line-height:1;margin-bottom:2px;opacity:0.35;filter:grayscale(1);transition:all .2s ease;}
+  .streak-card.active .streak-flame{opacity:1;filter:grayscale(0);}
+  .streak-num{font-family:var(--font-display);font-size:21px;font-weight:700;line-height:1;}
+  .streak-card[data-subject="physics"] .streak-num{color:var(--physics);}
+  .streak-card[data-subject="chemistry"] .streak-num{color:var(--chemistry);}
+  .streak-card[data-subject="maths"] .streak-num{color:var(--maths);}
+  .streak-label{font-size:9px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;}
+  .streak-shield{font-size:9.5px;margin-top:7px;min-height:13px;font-weight:600;letter-spacing:0.02em;}
+  .streak-shield.available{color:var(--success);}
+  .streak-shield.used{color:var(--text-dim);}
+
+  /* ---------- Add Panel ---------- */
+  .panel{
+    background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px;margin-bottom:18px;
+    backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);
+    box-shadow:0 14px 32px -24px rgba(0,0,0,0.7);
+  }
+  .panel-title{font-family:var(--font-display);font-size:13px;font-weight:600;color:var(--text-secondary);
+    text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;}
+
+  .subject-picker{display:flex;gap:8px;margin-bottom:12px;}
+  .subj-btn{
+    flex:1;font-family:var(--font-display);font-weight:600;font-size:13px;
+    background:var(--bg-elevated);border:1.5px solid var(--border);border-radius:9px;
+    padding:10px 6px;color:var(--text-secondary);cursor:pointer;transition:all .15s ease;text-align:center;
+  }
+  .subj-btn[data-subject="physics"].active{border-color:var(--physics);color:var(--physics);background:var(--physics-glow);box-shadow:0 0 0 1px var(--physics-glow);}
+  .subj-btn[data-subject="chemistry"].active{border-color:var(--chemistry);color:var(--chemistry);background:var(--chemistry-glow);box-shadow:0 0 0 1px var(--chemistry-glow);}
+  .subj-btn[data-subject="maths"].active{border-color:var(--maths);color:var(--maths);background:var(--maths-glow);box-shadow:0 0 0 1px var(--maths-glow);}
+  .subj-btn:hover:not(.active){border-color:var(--border-hover);color:var(--text-primary);}
+  .subj-btn:active{transform:scale(0.97);}
+
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field.full{grid-column:1/-1;}
+  label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;}
+  input[type="text"], input[type="date"], textarea, select{
+    font-family:var(--font-mono);font-size:13.5px;color:var(--text-primary);
+    background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;
+    padding:9px 10px;outline:none;transition:border-color .15s ease;width:100%;
+  }
+  input[type="text"]:focus, input[type="date"]:focus, textarea:focus, select:focus{border-color:var(--border-hover);}
+  input[type="date"]{color-scheme:dark;}
+  textarea{resize:vertical;min-height:64px;line-height:1.5;font-size:13px;}
+  ::placeholder{color:var(--text-dim);}
+
+  .add-btn{
+    width:100%;font-family:var(--font-display);font-weight:700;font-size:14px;letter-spacing:0.02em;
+    background:linear-gradient(135deg, var(--physics), var(--maths));color:#050508;
+    border:none;border-radius:9px;padding:12px;cursor:pointer;margin-top:2px;
+    box-shadow:0 10px 24px -10px var(--physics-glow), 0 2px 0 rgba(0,0,0,0.15) inset;
+    transition:opacity .15s ease,transform .12s ease,box-shadow .15s ease;
+  }
+  .add-btn:hover{opacity:0.9;transform:translateY(-1px);box-shadow:0 14px 30px -10px var(--physics-glow), 0 2px 0 rgba(0,0,0,0.15) inset;}
+  .add-btn:active{transform:translateY(0) scale(0.98);box-shadow:0 4px 12px -6px var(--physics-glow) inset;}
+  .add-btn.editing{background:linear-gradient(135deg, var(--warning), var(--chemistry));}
+  .cancel-edit{
+    display:none;text-align:center;font-size:11px;color:var(--text-secondary);
+    margin-top:8px;cursor:pointer;text-decoration:underline;
+  }
+  .cancel-edit.show{display:block;}
+
+  .hint{font-size:10.5px;color:var(--text-dim);margin-top:8px;text-align:center;}
+
+  /* ---------- Filters ---------- */
+  .filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
+  .filter-tabs{display:flex;gap:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:9px;padding:3px;}
+  .filter-tab{
+    font-family:var(--font-mono);font-size:11.5px;font-weight:600;color:var(--text-secondary);
+    background:transparent;border:none;border-radius:7px;padding:7px 11px;cursor:pointer;transition:all .15s ease;
+  }
+  .filter-tab.active{background:var(--bg-elevated);color:var(--text-primary);}
+  .filter-tab:active{transform:scale(0.95);}
+  .status-select{
+    font-family:var(--font-mono);font-size:11.5px;background:var(--bg-card);border:1px solid var(--border);
+    border-radius:9px;color:var(--text-secondary);padding:8px 10px;cursor:pointer;
+  }
+  .search-input{
+    flex:1;min-width:120px;font-family:var(--font-mono);font-size:12px;background:var(--bg-card);
+    border:1px solid var(--border);border-radius:9px;color:var(--text-primary);padding:8px 10px;
+  }
+
+  /* ---------- List ---------- */
+  .date-group{margin-bottom:22px;}
+  .date-heading{
+    font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--text-secondary);
+    text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;padding-left:2px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .date-heading::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--text-dim);box-shadow:0 0 8px var(--text-dim);flex-shrink:0;}
+  .date-heading::after{content:'';flex:1;height:1px;background:linear-gradient(90deg, var(--border), transparent);}
+
+  .hw-card{
+    background:
+      linear-gradient(155deg, rgba(255,255,255,0.05), transparent 40%),
+      var(--bg-card);
+    border:1px solid var(--border);border-left:none;
+    border-radius:14px;padding:16px 17px 15px;margin-bottom:12px;position:relative;overflow:hidden;
+    backdrop-filter:blur(16px) saturate(150%);-webkit-backdrop-filter:blur(16px) saturate(150%);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.06) inset,
+      0 16px 34px -22px rgba(0,0,0,0.8),
+      0 2px 8px -4px rgba(0,0,0,0.5);
+    transform-style:preserve-3d;will-change:transform;
+    transition:border-color .18s ease,background .18s ease,box-shadow .25s ease,transform .12s ease;
+    animation:cardIn .45s cubic-bezier(.16,1,.3,1) both;
+  }
+  /* subject-tinted ambient edge glow, sits behind the card */
+  .hw-card::after{
+    content:'';position:absolute;left:-1px;top:10%;bottom:10%;width:3px;border-radius:3px;z-index:2;
+    box-shadow:0 0 14px 1px var(--card-accent-glow,transparent);
+    background:var(--card-accent,var(--text-dim));
+  }
+  .hw-card[data-subject="physics"]{--card-accent:var(--physics);--card-accent-glow:rgba(0,217,255,0.55);}
+  .hw-card[data-subject="chemistry"]{--card-accent:var(--chemistry);--card-accent-glow:rgba(255,184,0,0.55);}
+  .hw-card[data-subject="maths"]{--card-accent:var(--maths);--card-accent-glow:rgba(255,46,230,0.55);}
+  .hw-card::before{
+    content:'';position:absolute;inset:0;pointer-events:none;opacity:0;z-index:1;border-radius:inherit;
+    background:radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,0.10), transparent 46%);
+    transition:opacity .25s ease;
+  }
+  .hw-card:hover{
+    background:linear-gradient(155deg, rgba(255,255,255,0.07), transparent 40%), var(--bg-card-hover);
+    border-color:var(--border-hover);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.09) inset,
+      0 24px 48px -20px rgba(0,0,0,0.85),
+      0 0 30px -14px var(--card-accent-glow,transparent);
+  }
+  .hw-card:hover::before{opacity:1;}
+  @keyframes cardIn{from{opacity:0;transform:translateY(16px) scale(.97) rotateX(-4deg);}to{opacity:1;transform:translateY(0) scale(1) rotateX(0);}}
+  .hw-card.done{opacity:0.5;}
+  .hw-card.done::after{background:var(--text-dim);box-shadow:none;}
+  .hw-card.just-done{animation:pulse-done .5s ease;}
+  @keyframes pulse-done{
+    0%{background:var(--success-glow);}
+    100%{}
+  }
+
+  /* ---------- Starred / must-complete ---------- */
+  .hw-card.starred{
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.07) inset,
+      0 16px 34px -20px rgba(0,0,0,0.8),
+      0 0 0 1px rgba(255,167,38,0.25),
+      0 0 26px -6px rgba(255,167,38,0.4);
+  }
+  .hw-card.starred::after{background:var(--warning);box-shadow:0 0 16px 2px rgba(255,167,38,0.65);}
+  .hw-card.starred:hover{box-shadow:
+      0 1px 0 rgba(255,255,255,0.09) inset,
+      0 24px 46px -16px rgba(0,0,0,0.85),
+      0 0 0 1px rgba(255,167,38,0.35),
+      0 0 34px -4px rgba(255,167,38,0.5);}
+  .hw-card.starred.overdue-critical{animation:criticalPulse 1.8s ease-in-out infinite;}
+  @keyframes criticalPulse{
+    0%,100%{box-shadow:0 1px 0 rgba(255,255,255,0.07) inset, 0 16px 34px -20px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,71,87,0.3), 0 0 22px -4px rgba(255,71,87,0.45);}
+    50%{box-shadow:0 1px 0 rgba(255,255,255,0.07) inset, 0 16px 34px -20px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,71,87,0.55), 0 0 38px -2px rgba(255,71,87,0.7);}
+  }
+  .must-complete-tag{
+    display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;letter-spacing:0.04em;
+    text-transform:uppercase;color:var(--warning);background:var(--warning-glow);
+    border:1px solid rgba(255,167,38,0.35);border-radius:5px;padding:2.5px 6px;
+  }
+  .icon-btn.star-toggle.active{color:var(--warning);border-color:var(--warning);background:var(--warning-glow);}
+  .priority-heading{
+    font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--warning);
+    text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;padding-left:2px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .priority-heading::after{content:'';flex:1;height:1px;background:rgba(255,167,38,0.25);}
+  .priority-group{margin-bottom:24px;}
+
+  .hw-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:9px;position:relative;z-index:2;}
+  .hw-meta{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+  .subj-tag{
+    font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;padding:3px 8px;border-radius:6px;
+    box-shadow:0 1px 0 rgba(255,255,255,0.08) inset;
+  }
+  .subj-tag.physics{color:var(--physics);background:var(--physics-glow);text-shadow:0 0 12px rgba(0,217,255,0.5);}
+  .subj-tag.chemistry{color:var(--chemistry);background:var(--chemistry-glow);text-shadow:0 0 12px rgba(255,184,0,0.5);}
+  .subj-tag.maths{color:var(--maths);background:var(--maths-glow);text-shadow:0 0 12px rgba(255,46,230,0.5);}
+  .chapter-name{font-family:var(--font-display);font-weight:700;font-size:14.5px;letter-spacing:-0.01em;}
+  .hw-card.done .chapter-name{text-decoration:line-through;color:var(--text-secondary);}
+
+  .hw-actions{display:flex;gap:6px;flex-shrink:0;position:relative;z-index:2;}
+  .icon-btn{
+    background:linear-gradient(155deg, rgba(255,255,255,0.06), transparent), var(--bg-elevated);
+    border:1px solid var(--border);border-radius:8px;
+    width:29px;height:29px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;font-size:13px;color:var(--text-secondary);
+    box-shadow:0 3px 8px -4px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.05) inset;
+    transition:all .15s ease;
+  }
+  .icon-btn:hover{color:var(--text-primary);border-color:var(--border-hover);transform:translateY(-2px);box-shadow:0 6px 14px -6px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.08) inset;}
+  .icon-btn:active{transform:scale(0.88) translateY(0);}
+  .icon-btn.done-toggle.checked{color:var(--success);border-color:var(--success);background:var(--success-glow);box-shadow:0 0 12px -2px var(--success-glow), 0 1px 0 rgba(255,255,255,0.08) inset;}
+  .icon-btn.del-btn:hover{color:var(--danger);border-color:var(--danger);}
+
+  .hw-body{
+    font-size:13px;line-height:1.6;color:var(--text-primary);white-space:pre-wrap;margin-bottom:11px;
+    position:relative;z-index:2;padding-left:1px;
+  }
+  .hw-card.done .hw-body{color:var(--text-secondary);}
+
+  .hw-bottom{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;position:relative;z-index:2;
+    padding-top:10px;border-top:1px solid rgba(255,255,255,0.05);}
+  .deadline-badge{
+    font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:7px;letter-spacing:0.02em;
+    box-shadow:0 1px 0 rgba(255,255,255,0.06) inset;
+  }
+  .deadline-badge.overdue{color:var(--danger);background:var(--danger-glow);box-shadow:0 0 10px -3px var(--danger-glow), 0 1px 0 rgba(255,255,255,0.06) inset;}
+  .deadline-badge.soon{color:var(--warning);background:var(--warning-glow);box-shadow:0 0 10px -3px var(--warning-glow), 0 1px 0 rgba(255,255,255,0.06) inset;}
+  .deadline-badge.ok{color:var(--text-secondary);background:var(--bg-elevated);}
+  .deadline-badge.done{color:var(--success);background:var(--success-glow);}
+  .lecture-date-tag{font-size:10px;color:var(--text-dim);font-family:var(--font-mono);}
+
+  .empty-state{
+    text-align:center;padding:50px 20px;color:var(--text-dim);
+    border:1px dashed var(--border);border-radius:var(--radius);font-size:12.5px;line-height:1.6;
+  }
+  .empty-state .big{font-size:28px;margin-bottom:8px;}
+
+  .stats .stat-card:nth-child(1){animation-delay:0ms;}
+  .stats .stat-card:nth-child(2){animation-delay:60ms;}
+  .stats .stat-card:nth-child(3){animation-delay:120ms;}
+  .stats .stat-card:nth-child(4){animation-delay:180ms;}
+  .streaks .streak-card:nth-child(1){animation-delay:80ms;}
+  .streaks .streak-card:nth-child(2){animation-delay:140ms;}
+  .streaks .streak-card:nth-child(3){animation-delay:200ms;}
+
+  /* ---------- Countdown ---------- */
+  .countdown-card{
+    position:relative;overflow:hidden;
+    background:linear-gradient(160deg, var(--bg-card), var(--bg-elevated));
+    border:1px solid var(--border);border-radius:20px;
+    padding:22px 22px;margin-bottom:22px;
+    display:flex;align-items:center;gap:22px;flex-wrap:wrap;
+    backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);
+    box-shadow:0 24px 60px -30px rgba(0,0,0,0.75);
+    transform-style:preserve-3d;will-change:transform;
+    transition:transform .12s ease, box-shadow .3s ease, border-color .3s ease;
+    animation:cardRise .55s cubic-bezier(.16,1,.3,1) both;
+  }
+  .countdown-card:hover{border-color:var(--border-hover);box-shadow:0 28px 70px -26px rgba(0,0,0,0.8);}
+  .countdown-glare{
+    position:absolute;inset:0;pointer-events:none;opacity:0;z-index:1;
+    background:radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,0.10), transparent 45%);
+    transition:opacity .3s ease;
+  }
+  .countdown-card:hover .countdown-glare{opacity:1;}
+  .countdown-ring-wrap{position:relative;width:168px;height:168px;flex-shrink:0;margin:0 auto;}
+  .countdown-ring{position:absolute;inset:0;overflow:visible;}
+  .ring-track{fill:none;stroke:var(--border);stroke-width:8;}
+  .ring-tick{stroke:var(--text-dim);stroke-width:1.4;opacity:.45;}
+  .ring-progress{
+    fill:none;stroke:url(#ringGrad);stroke-width:8;stroke-linecap:round;
+    transform-origin:100px 100px;transform:rotate(-90deg);
+    transition:stroke-dashoffset 1.1s cubic-bezier(.16,1,.3,1);
+  }
+  .ring-orbit-dot{fill:#fff;filter:drop-shadow(0 0 5px var(--physics)) drop-shadow(0 0 10px var(--maths));
+    animation:orbitPulse 2.4s ease-in-out infinite;}
+  @keyframes orbitPulse{0%,100%{r:3.6;opacity:1;}50%{r:5;opacity:.7;}}
+  .countdown-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+  .cd-weeks{
+    font-family:var(--font-display);font-size:42px;font-weight:700;line-height:1;
+    background:linear-gradient(135deg,var(--physics),var(--maths));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .cd-weeks-label{font-size:10px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.1em;margin-top:3px;}
+  .cd-sub{font-size:11px;color:var(--text-dim);margin-top:7px;}
+  .countdown-info{flex:1;min-width:170px;}
+  .countdown-eyebrow{
+    font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.12em;
+    color:var(--physics);text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px;
+  }
+  .countdown-eyebrow .pulse-dot{
+    width:6px;height:6px;border-radius:50%;background:var(--physics);
+    box-shadow:0 0 8px var(--physics);animation:orbitPulse 1.6s ease-in-out infinite;
+  }
+  .countdown-title{font-family:var(--font-display);font-size:17px;font-weight:700;letter-spacing:-.01em;color:var(--text-primary);margin-bottom:6px;}
+  .countdown-caption{font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.5;}
+  .countdown-total{
+    font-size:11px;color:var(--text-dim);font-family:var(--font-mono);
+    display:inline-flex;align-items:center;gap:6px;background:var(--bg-elevated);
+    border:1px solid var(--border);padding:6px 10px;border-radius:8px;
+  }
+  .countdown-total span{color:var(--text-primary);font-weight:700;}
+
+  @media(max-width:560px){
+    .countdown-card{flex-direction:column;text-align:center;padding:24px 18px;}
+    .countdown-info{text-align:center;}
+    .countdown-eyebrow{justify-content:center;}
+    .countdown-total{margin:0 auto;}
+  }
+
+  /* ---------- Toasts ---------- */
+  .toast-wrap{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:1000;
+    display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;
+  }
+  .toast{
+    background:var(--bg-elevated);border:1px solid var(--border-hover);
+    backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);
+    color:var(--text-primary);font-family:var(--font-mono);font-size:12.5px;
+    padding:10px 16px;border-radius:10px;box-shadow:0 16px 40px -14px rgba(0,0,0,.75);
+    opacity:0;transform:translateY(10px) scale(.96);white-space:nowrap;
+    animation:toastIn .35s cubic-bezier(.16,1,.3,1) forwards, toastOut .35s ease forwards 2.6s;
+  }
+  .toast.success{border-color:rgba(0,230,118,.4);}
+  .toast.error{border-color:rgba(255,71,87,.4);}
+  @keyframes toastIn{to{opacity:1;transform:translateY(0) scale(1);}}
+  @keyframes toastOut{to{opacity:0;transform:translateY(-6px) scale(.97);}}
+
+  .confetti-canvas{position:fixed;inset:0;z-index:999;pointer-events:none;}
+
+  @media(max-width:480px){
+    .stats{grid-template-columns:repeat(2,1fr);}
+    .field-row{grid-template-columns:1fr;}
+    .subject-picker{flex-wrap:wrap;}
+  }
+</style>
+</head>
+<body>
+<canvas id="starfield"></canvas>
+<div class="nebula"><div class="blob-a"></div><div class="blob-b"></div></div>
+<div class="app">
+
+  <header>
+    <div class="title-row">
+      <h1>Homework<span class="dot">.</span>Tracker</h1>
+      <div class="io-buttons">
+        <button class="io-btn" id="exportBtn">Export</button>
+        <button class="io-btn" id="importBtn">Import</button>
+      </div>
+    </div>
+    <div class="subtitle">Lecture-wise homework log — Physics · Chemistry · Maths</div>
+  </header>
+
+  <div class="sandbox-banner" id="sandboxBanner">
+    ⚠ Preview mode — local storage isn't available here, so entries won't be saved. Download this file and open it in a browser (or host it, e.g. on GitHub Pages) for entries to persist.
+  </div>
+
+  <div class="countdown-card" id="countdownCard">
+    <div class="countdown-glare"></div>
+    <div class="countdown-ring-wrap">
+      <svg class="countdown-ring" viewBox="0 0 200 200">
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#00d9ff"/>
+            <stop offset="55%" stop-color="#ffb800"/>
+            <stop offset="100%" stop-color="#ff2ee6"/>
+          </linearGradient>
+        </defs>
+        <circle class="ring-track" cx="100" cy="100" r="86"></circle>
+        <g id="ringTicks"></g>
+        <circle class="ring-progress" id="ringProgress" cx="100" cy="100" r="86"></circle>
+        <circle class="ring-orbit-dot" id="ringOrbitDot" cx="100" cy="14" r="3.6"></circle>
+      </svg>
+      <div class="countdown-center">
+        <div class="cd-weeks" id="cdWeeks">0</div>
+        <div class="cd-weeks-label" id="cdWeeksLabel">weeks left</div>
+        <div class="cd-sub" id="cdSub">0 days</div>
+      </div>
+    </div>
+    <div class="countdown-info">
+      <div class="countdown-eyebrow"><span class="pulse-dot"></span>T-MINUS</div>
+      <div class="countdown-title" id="cdTitle">Countdown to 30 Nov 2026</div>
+      <div class="countdown-caption" id="cdCaption">Time left to close out the syllabus.</div>
+      <div class="countdown-total">Total <span id="cdTotalDays">0</span> days remaining</div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Total</div></div>
+    <div class="stat-card pending"><div class="stat-num" id="statPending">0</div><div class="stat-label">Pending</div></div>
+    <div class="stat-card overdue"><div class="stat-num" id="statOverdue">0</div><div class="stat-label">Overdue</div></div>
+    <div class="stat-card rate"><div class="stat-num" id="statRate">0%</div><div class="stat-label">Completed</div></div>
+  </div>
+
+  <div class="streaks">
+    <div class="streak-card" data-subject="physics">
+      <div class="streak-flame">🔥</div>
+      <div class="streak-num" id="streakNum-physics">0</div>
+      <div class="streak-label">Physics streak</div>
+      <div class="streak-shield" id="streakShield-physics"></div>
+    </div>
+    <div class="streak-card" data-subject="chemistry">
+      <div class="streak-flame">🔥</div>
+      <div class="streak-num" id="streakNum-chemistry">0</div>
+      <div class="streak-label">Chemistry streak</div>
+      <div class="streak-shield" id="streakShield-chemistry"></div>
+    </div>
+    <div class="streak-card" data-subject="maths">
+      <div class="streak-flame">🔥</div>
+      <div class="streak-num" id="streakNum-maths">0</div>
+      <div class="streak-label">Maths streak</div>
+      <div class="streak-shield" id="streakShield-maths"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Log Today's Homework</div>
+
+    <div class="subject-picker" id="subjectPicker">
+      <button class="subj-btn" data-subject="physics">Physics</button>
+      <button class="subj-btn" data-subject="chemistry">Chemistry</button>
+      <button class="subj-btn" data-subject="maths">Maths</button>
+    </div>
+
+    <div class="field-row">
+      <div class="field full">
+        <label for="chapterInput">Chapter</label>
+        <input type="text" id="chapterInput" placeholder="e.g. Rotational Motion" list="chapterList" autocomplete="off">
+        <datalist id="chapterList"></datalist>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field full">
+        <label for="deadlineDate">Deadline</label>
+        <input type="date" id="deadlineDate">
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field full">
+        <label for="hwText">Homework Given</label>
+        <textarea id="hwText" placeholder="e.g. Ex 7.2 Q1-15, PYQ sheet on torque, revise NLM traps..."></textarea>
+      </div>
+    </div>
+
+    <button class="add-btn" id="addBtn">+ Add Homework</button>
+    <div class="cancel-edit" id="cancelEdit">Cancel edit</div>
+    <div class="hint">Tip: deadline defaults to the next day — check off homework once you've verified it.</div>
+  </div>
+
+  <div class="filters">
+    <div class="filter-tabs" id="subjectFilter">
+      <button class="filter-tab active" data-filter="all">All</button>
+      <button class="filter-tab" data-filter="physics">Phy</button>
+      <button class="filter-tab" data-filter="chemistry">Chem</button>
+      <button class="filter-tab" data-filter="maths">Math</button>
+    </div>
+    <select class="status-select" id="statusFilter">
+      <option value="all">All status</option>
+      <option value="pending">Pending</option>
+      <option value="overdue">Overdue</option>
+      <option value="done">Done</option>
+    </select>
+    <input type="text" class="search-input" id="searchInput" placeholder="Search chapter or homework...">
+  </div>
+
+  <div id="listContainer"></div>
+
+</div>
+
+<input type="file" id="importFile" accept=".json" hidden>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- Motion preference ---------------- */
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------------- Ambient background: starfield ---------------- */
+  (function initStarfield(){
+    const canvas = document.getElementById('starfield');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+    function resize(){
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const count = Math.min(160, Math.floor((canvas.width * canvas.height) / 9000));
+      stars = Array.from({ length: count }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.2 + 0.3,
+        phase: Math.random() * Math.PI * 2,
+        speed: Math.random() * 0.015 + 0.005
+      }));
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    if(prefersReducedMotion){
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      stars.forEach(s => { ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill(); });
+      return;
+    }
+    let t = 0;
+    function loop(){
+      t += 1;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      stars.forEach(s => {
+        const tw = 0.5 + 0.5 * Math.sin(t * s.speed + s.phase);
+        ctx.globalAlpha = 0.15 + tw * 0.5;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  })();
+
+  /* ---------------- Ambient background: nebula parallax ---------------- */
+  if(!prefersReducedMotion){
+    document.addEventListener('mousemove', function(e){
+      const nx = (e.clientX / window.innerWidth) - 0.5;
+      const ny = (e.clientY / window.innerHeight) - 0.5;
+      document.documentElement.style.setProperty('--parallax-x', (nx * 22) + 'px');
+      document.documentElement.style.setProperty('--parallax-y', (ny * 22) + 'px');
+    });
+  }
+
+  /* ---------------- Toasts ---------------- */
+  function showToast(msg, type){
+    let wrap = document.querySelector('.toast-wrap');
+    if(!wrap){
+      wrap = document.createElement('div');
+      wrap.className = 'toast-wrap';
+      document.body.appendChild(wrap);
+    }
+    const t = document.createElement('div');
+    t.className = 'toast' + (type ? ' ' + type : '');
+    t.textContent = msg;
+    wrap.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+  }
+
+  /* ---------------- Confetti burst ---------------- */
+  function burstConfetti(x, y, color){
+    if(prefersReducedMotion) return;
+    const canvas = document.createElement('canvas');
+    canvas.className = 'confetti-canvas';
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    const colors = [color || '#00d9ff', '#00e676', '#ffffff'];
+    const particles = Array.from({ length: 26 }, () => ({
+      x, y,
+      vx: (Math.random() - 0.5) * 7,
+      vy: -(Math.random() * 6 + 3),
+      size: Math.random() * 4 + 2,
+      rot: Math.random() * Math.PI * 2,
+      vr: (Math.random() - 0.5) * 0.4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      life: 1
+    }));
+    function frame(){
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+      particles.forEach(p => {
+        p.vy += 0.22;
+        p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life -= 0.018;
+        if(p.life > 0){
+          alive = true;
+          ctx.save();
+          ctx.globalAlpha = Math.max(p.life, 0);
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+          ctx.restore();
+        }
+      });
+      if(alive) requestAnimationFrame(frame);
+      else canvas.remove();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  /* ---------------- 3D tilt ---------------- */
+  function attachTilt(el, max){
+    if(prefersReducedMotion || !el) return;
+    max = max || 8;
+    let rect;
+    el.addEventListener('mouseenter', () => { rect = el.getBoundingClientRect(); });
+    el.addEventListener('mousemove', (e) => {
+      if(!rect) rect = el.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width;
+      const py = (e.clientY - rect.top) / rect.height;
+      const rx = (0.5 - py) * max * 2;
+      const ry = (px - 0.5) * max * 2;
+      el.style.transform = `perspective(700px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+      el.style.setProperty('--mx', (px * 100) + '%');
+      el.style.setProperty('--my', (py * 100) + '%');
+    });
+    el.addEventListener('mouseleave', () => { el.style.transform = ''; });
+  }
+
+  /* ---------------- Storage layer with sandbox detection ---------------- */
+  const DATA_KEY = 'jee_hw_tracker_data_v1';
+  const CHAPTERS_KEY = 'jee_hw_tracker_custom_chapters_v1';
+  let storageAvailable = true;
+  let memStore = {};
+
+  function testStorage(){
+    try{
+      const k = '__hw_test__';
+      localStorage.setItem(k,'1');
+      localStorage.removeItem(k);
+      return true;
+    }catch(e){ return false; }
+  }
+  storageAvailable = testStorage();
+  if(!storageAvailable){
+    document.getElementById('sandboxBanner').classList.add('show');
+  }
+
+  function storeGet(key){
+    if(storageAvailable){
+      return localStorage.getItem(key);
+    }
+    return memStore[key] || null;
+  }
+  function storeSet(key, value){
+    if(storageAvailable){
+      localStorage.setItem(key, value);
+    }else{
+      memStore[key] = value;
+    }
+  }
+
+  function loadData(){
+    try{
+      const raw = storeGet(DATA_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+  function saveData(){
+    storeSet(DATA_KEY, JSON.stringify(homeworkList));
+  }
+  function loadCustomChapters(){
+    try{
+      const raw = storeGet(CHAPTERS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+  function saveCustomChapters(){
+    storeSet(CHAPTERS_KEY, JSON.stringify(customChapters));
+  }
+
+  /* ---------------- Data ---------------- */
+  let homeworkList = loadData();
+  let customChapters = loadCustomChapters();
+  let editingId = null;
+  let activeSubjectForm = null;
+
+  const SUBJECT_LABELS = { physics:'Physics', chemistry:'Chemistry', maths:'Maths' };
+
+  const DEFAULT_CHAPTERS = {
+    physics:['Units & Measurements','Kinematics','Laws of Motion','Work Energy Power','Rotational Motion','Gravitation',
+      'Mechanical Properties of Solids','Mechanical Properties of Fluids','Thermal Properties of Matter','Thermodynamics',
+      'Kinetic Theory of Gases','Oscillations (SHM)','Waves','Electrostatics','Current Electricity',
+      'Magnetic Effects of Current','Magnetism & Matter','EMI','Alternating Current','EM Waves',
+      'Ray Optics','Wave Optics','Dual Nature of Matter','Atoms','Nuclei','Semiconductor Electronics'],
+    chemistry:['Some Basic Concepts of Chemistry','Structure of Atom','Classification & Periodicity','Chemical Bonding',
+      'States of Matter','Thermodynamics','Equilibrium','Redox Reactions','Hydrogen','s-Block Elements',
+      'p-Block (Group 13-14)','Organic Chemistry Basics','Hydrocarbons','Solid State','Solutions','Electrochemistry',
+      'Chemical Kinetics','Surface Chemistry','p-Block (Group 15-18)','d & f Block Elements','Coordination Compounds',
+      'Haloalkanes & Haloarenes','Alcohols Phenols Ethers','Aldehydes Ketones Carboxylic Acids','Amines',
+      'Biomolecules','Polymers','Chemistry in Everyday Life'],
+    maths:['Sets Relations Functions','Complex Numbers','Quadratic Equations','Sequences & Series',
+      'Permutations & Combinations','Binomial Theorem','Matrices & Determinants','Straight Lines','Circles',
+      'Conic Sections','Trigonometric Ratios & Identities','Trigonometric Equations','Inverse Trig Functions',
+      'Limits Continuity Differentiability','Differentiation','Application of Derivatives','Indefinite Integration',
+      'Definite Integration','Application of Integrals','Differential Equations','Vector Algebra','3D Geometry',
+      'Probability','Statistics']
+  };
+
+  /* ---------------- Helpers ---------------- */
+  function todayISO(){
+    const d = new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function addDaysISO(iso, days){
+    const d = new Date(iso+'T00:00:00');
+    d.setDate(d.getDate()+days);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function daysUntil(iso){
+    const today = new Date(todayISO()+'T00:00:00');
+    const target = new Date(iso+'T00:00:00');
+    return Math.round((target - today) / 86400000);
+  }
+  function formatDateHeading(iso){
+    const d = new Date(iso+'T00:00:00');
+    return d.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+  }
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : str;
+    return div.innerHTML;
+  }
+  function uid(){
+    return 'hw_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  }
+
+  /* ---------------- DOM refs ---------------- */
+  const subjectPicker = document.getElementById('subjectPicker');
+  const chapterInput = document.getElementById('chapterInput');
+  const chapterList = document.getElementById('chapterList');
+  const deadlineDate = document.getElementById('deadlineDate');
+  const hwText = document.getElementById('hwText');
+  const addBtn = document.getElementById('addBtn');
+  const cancelEdit = document.getElementById('cancelEdit');
+  const listContainer = document.getElementById('listContainer');
+  const subjectFilterBar = document.getElementById('subjectFilter');
+  const statusFilter = document.getElementById('statusFilter');
+  const searchInput = document.getElementById('searchInput');
+
+  let currentSubjectFilter = 'all';
+
+  /* ---------------- 3D tilt on static cards ---------------- */
+  attachTilt(document.getElementById('countdownCard'), 5);
+  document.querySelectorAll('.stat-card').forEach(el => attachTilt(el, 7));
+  document.querySelectorAll('.streak-card').forEach(el => attachTilt(el, 7));
+
+  // Lightweight delegated tilt for homework cards (list is re-rendered often)
+  if(!prefersReducedMotion){
+    listContainer.addEventListener('mousemove', function(e){
+      const card = e.target.closest('.hw-card');
+      if(!card) return;
+      const rect = card.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width;
+      const py = (e.clientY - rect.top) / rect.height;
+      card.style.transform = `perspective(700px) rotateX(${(0.5 - py) * 5}deg) rotateY(${(px - 0.5) * 5}deg)`;
+      card.style.setProperty('--mx', (px * 100) + '%');
+      card.style.setProperty('--my', (py * 100) + '%');
+    });
+    listContainer.addEventListener('mouseleave', function(e){
+      const card = e.target.closest && e.target.closest('.hw-card');
+      if(card) card.style.transform = '';
+    }, true);
+  }
+
+  /* ---------------- Countdown to 30 Nov 2026 ---------------- */
+  const COUNTDOWN_TARGET = '2026-11-30';
+  const GAUGE_MAX_WEEKS = 20; // ring shows remaining time as a fraction of a ~5 month scale
+  const RING_EL = document.getElementById('ringProgress');
+  const RING_CIRC = RING_EL ? 2 * Math.PI * 86 : 0;
+
+  function buildRingTicks(){
+    const g = document.getElementById('ringTicks');
+    if(!g) return;
+    for(let i = 0; i < 12; i++){
+      const angle = (i * 30) * Math.PI / 180;
+      const x1 = 100 + 92 * Math.cos(angle), y1 = 100 + 92 * Math.sin(angle);
+      const x2 = 100 + 98 * Math.cos(angle), y2 = 100 + 98 * Math.sin(angle);
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+      line.setAttribute('class', 'ring-tick');
+      g.appendChild(line);
+    }
+  }
+  buildRingTicks();
+
+  function renderCountdown(){
+    if(!RING_EL) return;
+    const now = new Date();
+    const target = new Date(COUNTDOWN_TARGET + 'T23:59:59');
+    const diffMs = target - now;
+    const past = diffMs < 0;
+    const absDays = Math.max(0, Math.ceil(Math.abs(diffMs) / 86400000));
+    const weeks = Math.floor(absDays / 7);
+    const days = absDays % 7;
+
+    document.getElementById('cdWeeks').textContent = weeks;
+    document.getElementById('cdWeeksLabel').textContent = (weeks === 1 ? 'week' : 'weeks') + (past ? ' ago' : ' left');
+    document.getElementById('cdSub').textContent = days + (days === 1 ? ' day' : ' days') + (past ? ' ago' : '');
+    document.getElementById('cdTotalDays').textContent = absDays;
+    document.getElementById('cdCaption').textContent = past
+      ? 'The 30 Nov 2026 deadline has passed.'
+      : (absDays <= 7 ? 'Final week — make it count.' : 'Time left to close out the syllabus.');
+
+    const fraction = past ? 0 : Math.max(0, Math.min(1, absDays / (GAUGE_MAX_WEEKS * 7)));
+    const offset = RING_CIRC * (1 - fraction);
+    RING_EL.style.strokeDasharray = RING_CIRC;
+    RING_EL.style.strokeDashoffset = offset;
+
+    const angle = (-90 + fraction * 360) * Math.PI / 180;
+    const dot = document.getElementById('ringOrbitDot');
+    if(dot){
+      dot.setAttribute('cx', 100 + 86 * Math.cos(angle));
+      dot.setAttribute('cy', 100 + 86 * Math.sin(angle));
+    }
+  }
+  renderCountdown();
+  setInterval(renderCountdown, 60 * 60 * 1000);
+
+  /* ---------------- Init defaults ---------------- */
+  deadlineDate.value = addDaysISO(todayISO(), 1);
+  deadlineDate.addEventListener('input', function(){ deadlineDate.dataset.userTouched = '1'; });
+
+  /* ---------------- Subject picker (form) ---------------- */
+  subjectPicker.addEventListener('click', function(e){
+    const btn = e.target.closest('.subj-btn');
+    if(!btn) return;
+    activeSubjectForm = btn.dataset.subject;
+    Array.from(subjectPicker.children).forEach(b => b.classList.toggle('active', b === btn));
+    populateChapterList(activeSubjectForm);
+  });
+
+  function populateChapterList(subject){
+    chapterList.innerHTML = '';
+    if(!subject) return;
+    const defaults = DEFAULT_CHAPTERS[subject] || [];
+    const custom = customChapters.filter(c => c.subject === subject).map(c => c.name);
+    const all = Array.from(new Set([...defaults, ...custom]));
+    all.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      chapterList.appendChild(opt);
+    });
+  }
+
+  /* ---------------- Add / Update ---------------- */
+  addBtn.addEventListener('click', function(){
+    const subject = activeSubjectForm;
+    const chapter = chapterInput.value.trim();
+    const text = hwText.value.trim();
+    const dDate = deadlineDate.value;
+
+    if(!subject){ flashField(subjectPicker); return; }
+    if(!chapter){ flashField(chapterInput); return; }
+    if(!text){ flashField(hwText); return; }
+    if(!dDate){ flashField(deadlineDate); return; }
+
+    // remember custom chapter
+    if(!(DEFAULT_CHAPTERS[subject]||[]).includes(chapter) &&
+       !customChapters.some(c => c.subject === subject && c.name === chapter)){
+      customChapters.push({ subject, name: chapter });
+      saveCustomChapters();
+    }
+
+    if(editingId){
+      const entry = homeworkList.find(h => h.id === editingId);
+      if(entry){
+        entry.subject = subject;
+        entry.chapter = chapter;
+        entry.text = text;
+        entry.deadline = dDate;
+      }
+      editingId = null;
+      addBtn.textContent = '+ Add Homework';
+      addBtn.classList.remove('editing');
+      cancelEdit.classList.remove('show');
+    }else{
+      homeworkList.push({
+        id: uid(),
+        subject, chapter, text,
+        deadline: dDate,
+        done: false,
+        doneDate: null,
+        starred: false,
+        createdAt: Date.now()
+      });
+    }
+
+    saveData();
+    resetForm(true);
+    render();
+  });
+
+  cancelEdit.addEventListener('click', function(){
+    editingId = null;
+    addBtn.textContent = '+ Add Homework';
+    addBtn.classList.remove('editing');
+    cancelEdit.classList.remove('show');
+    resetForm(false);
+  });
+
+  function flashField(el){
+    el.style.transition = 'box-shadow .15s ease';
+    el.style.boxShadow = '0 0 0 2px var(--danger)';
+    setTimeout(() => { el.style.boxShadow = ''; }, 500);
+  }
+
+  function resetForm(keepSubject){
+    chapterInput.value = '';
+    hwText.value = '';
+    deadlineDate.dataset.userTouched = '';
+    deadlineDate.value = addDaysISO(todayISO(), 1);
+    if(!keepSubject){
+      activeSubjectForm = null;
+      Array.from(subjectPicker.children).forEach(b => b.classList.remove('active'));
+      chapterList.innerHTML = '';
+    }
+  }
+
+  /* ---------------- Filters ---------------- */
+  subjectFilterBar.addEventListener('click', function(e){
+    const btn = e.target.closest('.filter-tab');
+    if(!btn) return;
+    currentSubjectFilter = btn.dataset.filter;
+    Array.from(subjectFilterBar.children).forEach(b => b.classList.toggle('active', b === btn));
+    render();
+  });
+  statusFilter.addEventListener('change', render);
+  searchInput.addEventListener('input', render);
+
+  /* ---------------- List actions (delegated) ---------------- */
+  listContainer.addEventListener('click', function(e){
+    const card = e.target.closest('.hw-card');
+    if(!card) return;
+    const id = card.dataset.id;
+    const entry = homeworkList.find(h => h.id === id);
+    if(!entry) return;
+
+    if(e.target.closest('.star-toggle')){
+      entry.starred = !entry.starred;
+      saveData();
+      render();
+    } else if(e.target.closest('.done-toggle')){
+      const toggleBtn = e.target.closest('.done-toggle');
+      const toggleRect = toggleBtn.getBoundingClientRect();
+      entry.done = !entry.done;
+      entry.doneDate = entry.done ? todayISO() : null;
+      saveData();
+      render();
+      if(entry.done){
+        const subjectColor = getComputedStyle(document.documentElement).getPropertyValue('--' + entry.subject).trim();
+        burstConfetti(toggleRect.left + toggleRect.width/2, toggleRect.top + toggleRect.height/2, subjectColor);
+        requestAnimationFrame(() => {
+          const newCard = listContainer.querySelector('[data-id="'+CSS.escape(id)+'"]');
+          if(newCard){
+            newCard.classList.add('just-done');
+            setTimeout(() => newCard.classList.remove('just-done'), 550);
+          }
+        });
+      }
+    } else if(e.target.closest('.edit-btn')){
+      startEdit(entry);
+    } else if(e.target.closest('.del-btn')){
+      if(confirm('Delete this homework entry?')){
+        homeworkList = homeworkList.filter(h => h.id !== id);
+        saveData();
+        render();
+      }
+    }
+  });
+
+  function startEdit(entry){
+    editingId = entry.id;
+    activeSubjectForm = entry.subject;
+    Array.from(subjectPicker.children).forEach(b => b.classList.toggle('active', b.dataset.subject === entry.subject));
+    populateChapterList(entry.subject);
+    chapterInput.value = entry.chapter;
+    hwText.value = entry.text;
+    deadlineDate.value = entry.deadline;
+    deadlineDate.dataset.userTouched = '1';
+    addBtn.textContent = '✓ Save Changes';
+    addBtn.classList.add('editing');
+    cancelEdit.classList.add('show');
+    window.scrollTo({ top:0, behavior:'smooth' });
+  }
+
+  /* ---------------- Export / Import ---------------- */
+  document.getElementById('exportBtn').addEventListener('click', function(){
+    const blob = new Blob([JSON.stringify({ homework: homeworkList, customChapters }, null, 2)], { type:'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'homework-tracker-' + todayISO() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  const importFile = document.getElementById('importFile');
+  document.getElementById('importBtn').addEventListener('click', () => importFile.click());
+  importFile.addEventListener('change', function(){
+    const file = importFile.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(){
+      try{
+        const parsed = JSON.parse(reader.result);
+        const incoming = Array.isArray(parsed) ? parsed : (parsed.homework || []);
+        const incomingChapters = Array.isArray(parsed.customChapters) ? parsed.customChapters : [];
+        const existingIds = new Set(homeworkList.map(h => h.id));
+        let added = 0;
+        incoming.forEach(item => {
+          if(item && item.id && !existingIds.has(item.id)){
+            homeworkList.push(item);
+            existingIds.add(item.id);
+            added++;
+          }
+        });
+        incomingChapters.forEach(c => {
+          if(!customChapters.some(ec => ec.subject === c.subject && ec.name === c.name)){
+            customChapters.push(c);
+          }
+        });
+        saveData();
+        saveCustomChapters();
+        render();
+        showToast(added + ' homework entrie(s) imported.', 'success');
+      }catch(err){
+        showToast('Could not read that file — make sure it\'s a JSON export from this tool.', 'error');
+      }
+      importFile.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  /* ---------------- Streaks ---------------- */
+  // A day only counts if the subject had homework due that day (deadline == day).
+  // Clean day (all due homework checked by that day) -> streak +1.
+  // Missed day: if current streak > 7 and the one-time relaxation for this run
+  // hasn't been used yet, the miss is forgiven (streak holds, relaxation is spent).
+  // Otherwise the streak resets to 0 and relaxation eligibility resets with it.
+  // Today is never judged as a miss while its homework is still pending.
+  function computeSubjectStreak(subject){
+    const entries = homeworkList.filter(h => h.subject === subject);
+    if(entries.length === 0) return { streak:0, relaxationAvailable:false, relaxationUsed:false };
+
+    const byDay = {};
+    entries.forEach(e => {
+      if(!byDay[e.deadline]) byDay[e.deadline] = [];
+      byDay[e.deadline].push(e);
+    });
+
+    const deadlines = Object.keys(byDay).sort();
+    const today = todayISO();
+    let cursor = new Date(deadlines[0] + 'T00:00:00');
+    const end = new Date(today + 'T00:00:00');
+
+    let streak = 0;
+    let relaxationUsed = false;
+
+    while(cursor <= end){
+      const dayIso = cursor.getFullYear()+'-'+String(cursor.getMonth()+1).padStart(2,'0')+'-'+String(cursor.getDate()).padStart(2,'0');
+      const dayEntries = byDay[dayIso];
+
+      if(dayEntries && dayEntries.length){
+        const isToday = dayIso === today;
+        const allDone = dayEntries.every(e => e.done && e.doneDate && e.doneDate <= dayIso);
+
+        if(isToday && !allDone){
+          // day still in progress — don't judge yet
+        } else if(allDone){
+          streak += 1;
+        } else if(streak > 7 && !relaxationUsed){
+          relaxationUsed = true; // one-day grace, streak holds
+        } else {
+          streak = 0;
+          relaxationUsed = false;
+        }
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return { streak, relaxationAvailable: streak > 7 && !relaxationUsed, relaxationUsed };
+  }
+
+  function renderStreaks(){
+    ['physics','chemistry','maths'].forEach(subject => {
+      const { streak, relaxationAvailable, relaxationUsed } = computeSubjectStreak(subject);
+      const card = document.querySelector('.streak-card[data-subject="'+subject+'"]');
+      document.getElementById('streakNum-'+subject).textContent = streak;
+      card.classList.toggle('active', streak > 0);
+      card.classList.toggle('hot', streak > 7);
+
+      const shieldEl = document.getElementById('streakShield-'+subject);
+      if(relaxationAvailable){
+        shieldEl.textContent = '🛡 relaxation ready';
+        shieldEl.className = 'streak-shield available';
+      } else if(streak > 7 && relaxationUsed){
+        shieldEl.textContent = '🛡 relaxation used';
+        shieldEl.className = 'streak-shield used';
+      } else {
+        shieldEl.textContent = '';
+        shieldEl.className = 'streak-shield';
+      }
+    });
+  }
+
+  /* ---------------- Render ---------------- */
+  function getStatus(entry){
+    if(entry.done) return 'done';
+    const d = daysUntil(entry.deadline);
+    if(d < 0) return 'overdue';
+    return 'pending';
+  }
+
+  function render(){
+    renderStreaks();
+
+    // stats
+    const total = homeworkList.length;
+    const pending = homeworkList.filter(h => !h.done).length;
+    const overdue = homeworkList.filter(h => !h.done && daysUntil(h.deadline) < 0).length;
+    const doneCount = homeworkList.filter(h => h.done).length;
+    const rate = total ? Math.round((doneCount/total)*100) : 0;
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statPending').textContent = pending;
+    document.getElementById('statOverdue').textContent = overdue;
+    document.getElementById('statRate').textContent = rate + '%';
+
+    // filter
+    const q = searchInput.value.trim().toLowerCase();
+    const sFilter = statusFilter.value;
+    let filtered = homeworkList.filter(h => {
+      if(currentSubjectFilter !== 'all' && h.subject !== currentSubjectFilter) return false;
+      const status = getStatus(h);
+      if(sFilter !== 'all' && status !== sFilter) return false;
+      if(q && !(h.chapter.toLowerCase().includes(q) || h.text.toLowerCase().includes(q))) return false;
+      return true;
+    });
+
+    // sort: deadline ascending (soonest due first)
+    filtered.sort((a,b) => a.deadline.localeCompare(b.deadline));
+
+    listContainer.innerHTML = '';
+
+    if(filtered.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.innerHTML = homeworkList.length === 0
+        ? '<div class="big">📋</div>No homework logged yet.<br>Add today\'s lecture homework above to get started.'
+        : '<div class="big">🔍</div>No entries match your filters.';
+      listContainer.appendChild(empty);
+      return;
+    }
+
+    // pinned "must complete no matter what" section
+    const priorityEntries = filtered.filter(h => h.starred && !h.done).sort((a,b) => a.deadline.localeCompare(b.deadline));
+    if(priorityEntries.length){
+      const priorityWrap = document.createElement('div');
+      priorityWrap.className = 'priority-group';
+      const heading = document.createElement('div');
+      heading.className = 'priority-heading';
+      heading.textContent = '★ Must Complete Before Deadline';
+      priorityWrap.appendChild(heading);
+      priorityEntries.forEach((entry, i) => {
+        const cardEl = buildCard(entry);
+        cardEl.style.animationDelay = Math.min(i * 35, 350) + 'ms';
+        priorityWrap.appendChild(cardEl);
+      });
+      listContainer.appendChild(priorityWrap);
+    }
+
+    // group by deadline date
+    const groups = {};
+    filtered.forEach(h => {
+      if(!groups[h.deadline]) groups[h.deadline] = [];
+      groups[h.deadline].push(h);
+    });
+
+    Object.keys(groups).sort((a,b) => a.localeCompare(b)).forEach(dateKey => {
+      const groupWrap = document.createElement('div');
+      groupWrap.className = 'date-group';
+
+      const heading = document.createElement('div');
+      heading.className = 'date-heading';
+      heading.textContent = 'Due ' + formatDateHeading(dateKey);
+      groupWrap.appendChild(heading);
+
+      groups[dateKey].forEach((entry, i) => {
+        const cardEl = buildCard(entry);
+        cardEl.style.animationDelay = Math.min(i * 35, 350) + 'ms';
+        groupWrap.appendChild(cardEl);
+      });
+
+      listContainer.appendChild(groupWrap);
+    });
+  }
+
+  function buildCard(entry){
+    const card = document.createElement('div');
+    const isStarred = !!entry.starred;
+    const status = getStatus(entry);
+    const isCriticalOverdue = isStarred && status === 'overdue';
+    card.className = 'hw-card' + (entry.done ? ' done' : '') + (isStarred ? ' starred' : '') + (isCriticalOverdue ? ' overdue-critical' : '');
+    card.dataset.id = entry.id;
+    card.dataset.subject = entry.subject;
+
+    const d = daysUntil(entry.deadline);
+    let badgeClass = 'ok', badgeText = 'Due in ' + d + 'd';
+    if(entry.done){
+      badgeClass = 'done';
+      badgeText = '✓ Checked' + (entry.doneDate ? ' · ' + formatDateHeading(entry.doneDate).split(',')[0] : '');
+    } else if(d < 0){
+      badgeClass = 'overdue';
+      badgeText = 'Overdue ' + (-d) + 'd';
+    } else if(d === 0){
+      badgeClass = 'soon';
+      badgeText = 'Due today';
+    } else if(d === 1){
+      badgeClass = 'soon';
+      badgeText = 'Due tomorrow';
+    }
+
+    card.innerHTML = `
+      <div class="hw-top">
+        <div class="hw-meta">
+          <span class="subj-tag ${entry.subject}">${SUBJECT_LABELS[entry.subject]}</span>
+          <span class="chapter-name">${escapeHtml(entry.chapter)}</span>
+          ${isStarred ? '<span class="must-complete-tag">★ Must complete</span>' : ''}
+        </div>
+        <div class="hw-actions">
+          <button class="icon-btn star-toggle ${isStarred ? 'active' : ''}" title="${isStarred ? 'Unmark as must-complete' : 'Mark as must-complete before deadline'}">${isStarred ? '★' : '☆'}</button>
+          <button class="icon-btn done-toggle ${entry.done ? 'checked' : ''}" title="Mark checked">${entry.done ? '✓' : '○'}</button>
+          <button class="icon-btn edit-btn" title="Edit">✎</button>
+          <button class="icon-btn del-btn" title="Delete">🗑</button>
+        </div>
+      </div>
+      <div class="hw-body">${escapeHtml(entry.text)}</div>
+      <div class="hw-bottom">
+        <span class="lecture-date-tag">Deadline: ${entry.deadline}</span>
+        <span class="deadline-badge ${badgeClass}">${badgeText}</span>
+      </div>
+    `;
+    return card;
+  }
+
+  /* ---------------- Go ---------------- */
+  render();
+
+})();
+</script>
+</body>
+</html>
